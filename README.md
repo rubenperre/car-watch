@@ -31,7 +31,9 @@ plain SQL in `supabase/`.
    the `anon` key and the `service_role` key. Newer projects call them the **publishable key**
    (`sb_publishable_...`, goes in `VITE_SUPABASE_ANON_KEY`) and the **secret key** (`sb_secret_...`, goes in
    `SUPABASE_SERVICE_ROLE_KEY`). Both generations work with this code.
-2. **Database.** In the Supabase SQL editor run `supabase/migrations/0001_init.sql`. Then run the insert from
+2. **Database.** In the Supabase SQL editor run `supabase/migrations/0001_init.sql` and then
+   `supabase/migrations/0002_service_role_grants.sql` (without the second one the scanner gets "permission
+   denied for table listings"). Then run the insert from
    `supabase/seed.example.sql` with the real Google email addresses of Ruben (admin), Liesbeth and the parents.
 3. **Turn off other sign-in methods.** *Authentication, Providers*: disable Email. Only Google stays on.
 4. **Google sign-in.**
