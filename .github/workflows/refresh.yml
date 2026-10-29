@@ -1,0 +1,47 @@
+name: Refresh listings
+
+# Scans the car sites every morning and writes the result to Supabase. No data is stored in this repo.
+on:
+  schedule:
+    - cron: "30 5 * * *" # 05:30 UTC, about 07:00 in Belgium
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan and upload
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: bash scanner/run.sh
+
+  # GitHub switches off scheduled workflows in a public repo after 60 days without a commit.
+  # The refresh above commits nothing, so once a month this job adds an empty commit to its own branch.
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Monthly empty commit
+        run: |
+          if [ "$(date -u +%d)" = "01" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git checkout -B keepalive
+            git commit --allow-empty -m "chore: keep scheduled workflows enabled"
+            git push --force origin keepalive
+          fi
