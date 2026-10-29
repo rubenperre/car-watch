@@ -1,10 +1,13 @@
 node_modules
 dist
+.DS_Store
+*.log
+
+# Secrets and local settings. The order matters: the exception must come after the pattern.
 .env
 .env.*
 !.env.example
-.DS_Store
-__pycache__
-*.log
+
+# Scanner output
 scanner/out/
-scanner/*.err
+*.err

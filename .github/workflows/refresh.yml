@@ -17,16 +17,23 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scanner
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: scanner/package-lock.json
+      - run: npm ci
       - name: Scan and upload
         env:
+          # Secrets (not variables): the service_role key can write to the database.
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: bash scanner/run.sh
+        run: npm run scan
 
   # GitHub switches off scheduled workflows in a public repo after 60 days without a commit.
   # The refresh above commits nothing, so once a month this job adds an empty commit to its own branch.
