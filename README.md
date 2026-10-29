@@ -31,10 +31,13 @@ plain SQL in `supabase/`.
    the `anon` key and the `service_role` key. Newer projects call them the **publishable key**
    (`sb_publishable_...`, goes in `VITE_SUPABASE_ANON_KEY`) and the **secret key** (`sb_secret_...`, goes in
    `SUPABASE_SERVICE_ROLE_KEY`). Both generations work with this code.
-2. **Database.** In the Supabase SQL editor run `supabase/migrations/0001_init.sql` and then
-   `supabase/migrations/0002_service_role_grants.sql` (without the second one the scanner gets "permission
-   denied for table listings"). Then run the insert from
-   `supabase/seed.example.sql` with the real Google email addresses of Ruben (admin), Liesbeth and the parents.
+2. **Database, applied by the pipeline.** The SQL files in `supabase/migrations/` are applied by the *Migrate
+   database* workflow whenever one of them changes on `main`, and by hand with `gh workflow run migrate.yml`.
+   It needs, once: a Supabase *access token* (supabase.com/dashboard/account/tokens) as secret
+   `SUPABASE_ACCESS_TOKEN`, the *database password* of the project (Project Settings, Database; reset it if you
+   do not have it) as secret `SUPABASE_DB_PASSWORD`, and the project ref (the part of the project URL before
+   `.supabase.co`) as variable `SUPABASE_PROJECT_REF`. Without them the workflow only prints a warning.
+   Pasting a migration into the SQL editor still works as a fallback.
 3. **Turn off other sign-in methods.** *Authentication, Providers*: disable Email. Only Google stays on.
 4. **Google sign-in.**
    - Google Cloud Console: create a project, *APIs & Services, OAuth consent screen* (External), set the publishing
@@ -48,13 +51,17 @@ plain SQL in `supabase/`.
 6. **GitHub.** Add repository **variables** `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, and repository
    **secrets** `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (Settings, Secrets and variables, Actions; or
    `gh variable set` / `gh secret set`). Pages is already set to deploy from GitHub Actions.
-7. Run the *Refresh listings* workflow once by hand, then open the site and sign in.
+7. **First admin.** Set the secret `ADMIN_EMAILS` to your Google address (several: separated by commas), then run
+   the *Sync admins* workflow once: `gh secret set ADMIN_EMAILS` and `gh workflow run admins.yml`. The address
+   stays in the secret and never appears in this public repo or in the logs.
+8. Run the *Refresh listings* workflow once by hand, then open the site and sign in.
 
 ## Daily use
 
 - *Refresh listings* runs every morning (about 07:00 Belgian time): scan, rank, upload. New cars get
   `status = new`, cars that vanished for 3 runs in a row get `gone`.
 - Give someone access: sign in as an admin, open the **Toegang** tab, add their Google email. Revoke the same way.
+  No SQL involved. (Only the very first admin needs the *Sync admins* workflow from setup step 7.)
 - The scan uses plain HTTPS requests to AutoScout24.be, Autohero and Cardoen.be and costs nothing. A site that
   fails is skipped (its cars are not counted as missing) and the run ends red so you notice.
 
@@ -117,6 +124,19 @@ run, as `jobs` made of `steps`. Each job gets a fresh virtual machine.
   set it). The `VITE_*` values are **variables**, because they are public anyway.
 - *`keepalive` job:* GitHub switches off scheduled workflows in a public repo after 60 days without a commit. Once
   a month this job adds an empty commit on its own branch to prevent that.
+
+**`migrate.yml`: database changes as code.**
+- *Trigger:* a push to `main` that touches `supabase/migrations/**`, plus a manual button. The `paths:` filter means
+  ordinary app changes do not run it.
+- It installs the Supabase CLI (`supabase/setup-cli`), links the project and runs `supabase db push`, which applies
+  every migration the database has not seen yet and remembers which ones it did. That is the same idea as Laravel's
+  `php artisan migrate`.
+- Migrations are written to be safe to run twice, so the first run over the files that were pasted by hand earlier is harmless.
+- *Missing secrets:* a step checks them and prints a warning instead of failing, because secrets cannot be used in an `if:`.
+
+**`admins.yml`: a manual, one-off job.** `workflow_dispatch` only. It reads the secret `ADMIN_EMAILS` and makes
+those people admins with the service key. It exists because of a chicken-and-egg problem: the admin tab needs an
+admin before anyone can be added from the app.
 
 **`dependabot.yml`:** opens weekly pull requests for outdated packages and actions. Each one runs `ci.yml`, so a
 breaking update shows up red before you merge it.
