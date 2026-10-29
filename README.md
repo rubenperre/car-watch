@@ -28,7 +28,9 @@ plain SQL in `supabase/`.
 ## One-time setup (about 20 minutes)
 
 1. **Supabase project.** Create a free project at supabase.com. In *Project Settings, API* note the project URL,
-   the `anon` key and the `service_role` key.
+   the `anon` key and the `service_role` key. Newer projects call them the **publishable key**
+   (`sb_publishable_...`, goes in `VITE_SUPABASE_ANON_KEY`) and the **secret key** (`sb_secret_...`, goes in
+   `SUPABASE_SERVICE_ROLE_KEY`). Both generations work with this code.
 2. **Database.** In the Supabase SQL editor run `supabase/migrations/0001_init.sql`. Then run the insert from
    `supabase/seed.example.sql` with the real Google email addresses of Ruben (admin), Liesbeth and the parents.
 3. **Turn off other sign-in methods.** *Authentication, Providers*: disable Email. Only Google stays on.
@@ -118,6 +120,27 @@ run, as `jobs` made of `steps`. Each job gets a fresh virtual machine.
 breaking update shows up red before you merge it.
 
 Useful commands: `gh run list`, `gh run view <id> --log-failed`, `gh run rerun <id> --failed`, `gh workflow run refresh.yml`.
+
+## Working on this repo (branch protection)
+
+`main` is protected on GitHub, for everyone including the owner:
+
+- No direct pushes. Every change goes through a pull request from a branch named `feat/...`, `fix/...`,
+  `docs/...`, `refactor/...` or `chore/...`.
+- The checks `scanner` and `app` (from `ci.yml`) must be green before the merge button works.
+- No force-pushes and the branch cannot be deleted. Open review conversations must be resolved.
+- No approval is required (a solo repo), only the checks.
+
+```bash
+git switch -c fix/short-description
+# edit, commit
+git push -u origin fix/short-description
+gh pr create --fill
+gh pr checks --watch
+gh pr merge --squash --delete-branch   # squash keeps main's history one commit per PR
+```
+
+When a PR merges to `main`, `ci.yml` runs again and `deploy` publishes the site.
 
 ## Check that it is locked
 
