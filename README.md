@@ -99,6 +99,23 @@ Where things live in `scanner/src/`:
 Criteria changes: `scanner/src/criteria.ts`, `scanner/src/rank.ts`, the header text in
 `app/src/components/CarList.tsx`, and this README, together.
 
+## Access requests and the phone push
+
+Someone who is not on the list signs in with Google, sees "Geen toegang", and nothing else happens. You find out in two ways:
+
+1. **The Aanvragen list.** In the app, open the **Toegang** tab. Everyone who signed in but is not on the allowlist is listed
+   there with a **Toegang geven** button. It reads `auth.users` through the admin-only database function
+   `access_requests()` (migration `0004`), so only admins ever get rows.
+2. **An instant push to your phone**, through [ntfy.sh](https://ntfy.sh) (free, no account). A database trigger on new
+   sign-ups sends the person's address to a private topic. Setup, once:
+   - Install the ntfy app and subscribe to your topic. The topic is a long random string that works as a password:
+     anyone who knows it can read the notifications.
+   - Save the same string as the secret `NTFY_TOPIC` (`gh secret set NTFY_TOPIC`), then run the *Sync settings*
+     workflow (`gh workflow run settings.yml`). It stores the topic in the locked `app_settings` table.
+   - The push fires **once per address, the first time it ever signs in**. To test again with an address that has
+     already signed in, delete it under Supabase, Authentication, Users, and sign in again.
+   - A failing push never blocks a sign-in.
+
 ## The pipelines (GitHub Actions)
 
 Workflows live in `.github/workflows/`. A workflow is a YAML file that says *when* to run (`on:`), and *what* to
@@ -137,6 +154,10 @@ run, as `jobs` made of `steps`. Each job gets a fresh virtual machine.
 **`admins.yml`: a manual, one-off job.** `workflow_dispatch` only. It reads the secret `ADMIN_EMAILS` and makes
 those people admins with the service key. It exists because of a chicken-and-egg problem: the admin tab needs an
 admin before anyone can be added from the app.
+
+**`settings.yml`: the same pattern for the push topic.** Manual only. It copies the secret `NTFY_TOPIC` into the
+database, because a database trigger cannot read GitHub secrets. The value is validated first (long enough to be a
+password) and never printed.
 
 **`dependabot.yml`:** opens weekly pull requests for outdated packages and actions. Each one runs `ci.yml`, so a
 breaking update shows up red before you merge it.

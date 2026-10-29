@@ -1,0 +1,36 @@
+name: Sync settings
+
+# Stores the ntfy topic (secret NTFY_TOPIC) in the database, where the sign-up trigger reads it to send the
+# phone push. The topic is a password, so it lives in a secret and never appears in this public repo or its logs.
+# Run it once after setting the secret, and again whenever you change the topic.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: settings
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: scanner
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: scanner/package-lock.json
+      - run: npm ci
+      - name: Store the settings
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: npm run sync-settings
