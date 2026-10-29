@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { isFlanders, minReg, minRegYear } from "../src/criteria.ts";
+import { isExcludedMake, isFlanders, minReg, minRegYear } from "../src/criteria.ts";
+
+describe("isExcludedMake", () => {
+  it.each([
+    ["Dacia", true],
+    ["DACIA", true],
+    ["Citroen", true],
+    ["Citroën", true],
+    [" citroën ", true],
+    ["Ford", false],
+    ["Peugeot", false],
+    ["", false],
+    [null, false],
+  ])("%s -> %s", (make, expected) => {
+    expect(isExcludedMake(make)).toBe(expected);
+  });
+});
 
 describe("minReg", () => {
   it("is the month after today's month, four years back", () => {

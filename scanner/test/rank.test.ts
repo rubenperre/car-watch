@@ -27,6 +27,8 @@ describe("evaluate: hard criteria", () => {
     ["a stated 5-speed", { gears: 5 }],
     ["title says automatic", { version: "Kuga 1.5 EcoBoost 150pk Automaat" }],
     ["a 70 kW VW-group car (5-speed)", { make: "Skoda", model: "Kamiq", gears: null, powerKw: 70 }],
+    ["a Dacia (never wanted)", { make: "Dacia", model: "Duster" }],
+    ["a Citroën (never wanted)", { make: "Citroën", model: "C3 Aircross" }],
   ] as const)("drops a car %s", (_label, over) => {
     expect(evaluate([car(over)], TODAY)).toHaveLength(0);
   });

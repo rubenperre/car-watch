@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 import type { Listing } from "../types";
 
 type Filter = "full" | "all" | "near" | "big";
-type Sort = "distance" | "price" | "km" | "reg";
+type Sort = "reg" | "added" | "distance" | "price" | "km";
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: "full", label: "Android Auto + camera" },
@@ -23,7 +23,7 @@ export function CarList() {
   const [rows, setRows] = useState<Listing[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("full");
-  const [sort, setSort] = useState<Sort>("distance");
+  const [sort, setSort] = useState<Sort>("reg");
 
   useEffect(() => {
     if (!supabase) return;
@@ -47,7 +47,8 @@ export function CarList() {
     return list.sort((a, b) => {
       if (sort === "price") return a.price - b.price;
       if (sort === "km") return a.km - b.km;
-      if (sort === "reg") return (b.first_registration ?? "").localeCompare(a.first_registration ?? "");
+      if (sort === "reg") return (b.first_registration ?? "").localeCompare(a.first_registration ?? "") || dist(a) - dist(b);
+      if (sort === "added") return b.first_seen.localeCompare(a.first_seen) || (b.first_registration ?? "").localeCompare(a.first_registration ?? "");
       return dist(a) - dist(b) || a.price - b.price;
     });
   }, [rows, filter, sort]);
@@ -64,7 +65,7 @@ export function CarList() {
           advertentie" om de auto te bekijken of de verkoper te bellen.
         </p>
         <div className="crit">
-          {["Vanaf 11/2022", "Max 50.000 km", "Max €20.000", "Manueel, min. 6 versnellingen", "Benzine", "Android Auto + camera", "Liefst SUV", "Binnen 110 km van Ieper"].map((c) => (
+          {["Vanaf 11/2022", "Max 50.000 km", "Max €20.000", "Manueel, min. 6 versnellingen", "Benzine", "Geen Dacia of Citroën", "Android Auto + camera", "Liefst SUV", "Binnen 110 km van Ieper"].map((c) => (
             <span key={c}>{c}</span>
           ))}
         </div>
@@ -101,10 +102,11 @@ export function CarList() {
         <label htmlFor="sort">
           Sorteer op{" "}
           <select id="sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+            <option value="reg">Nieuwste auto eerst</option>
+            <option value="added">Laatst toegevoegd</option>
             <option value="distance">Afstand tot Ieper</option>
             <option value="price">Prijs</option>
             <option value="km">Kilometerstand</option>
-            <option value="reg">Nieuwste eerst</option>
           </select>
         </label>
       </div>

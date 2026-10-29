@@ -23,6 +23,14 @@ export function minReg(today: Date = new Date()): string {
 
 export const minRegYear = (today: Date = new Date()): number => Number(minReg(today).slice(0, 4));
 
+/** Brands that are never wanted (standing rule from the earlier car searches). Compared without accents or case. */
+const EXCLUDED_MAKES = ["dacia", "citroen"];
+
+export function isExcludedMake(make: string | null | undefined): boolean {
+  const plain = (make ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").trim().toLowerCase();
+  return EXCLUDED_MAKES.includes(plain);
+}
+
 /** Flanders: Belgian postcodes 1500-3999 and 8000-9999 (Wallonia and Brussels are out). */
 export function isFlanders(zip: string | number | null | undefined): boolean {
   const z = Number(String(zip ?? "").slice(0, 4));

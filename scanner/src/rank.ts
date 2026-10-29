@@ -1,4 +1,4 @@
-import { MAX_KM, MAX_PRICE, minReg } from "./criteria.ts";
+import { isExcludedMake, MAX_KM, MAX_PRICE, minReg } from "./criteria.ts";
 import type { Car, Ranked } from "./types.ts";
 
 // Models that are a bigger crossover, closer to the Karoq the parents like.
@@ -35,6 +35,7 @@ function score(r: Omit<Ranked, "score">): number {
 export function evaluate(cars: Car[], today: Date = new Date()): Ranked[] {
   const out: Ranked[] = [];
   for (const car of cars) {
+    if (isExcludedMake(car.make)) continue;
     if (car.reg < minReg(today) || car.km > MAX_KM || car.price > MAX_PRICE) continue;
     if (AUTOMATIC_TITLE.test(car.version)) continue;
     const gearsEff = effectiveGears(car);

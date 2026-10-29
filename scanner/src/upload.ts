@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { GONE_AFTER_RUNS } from "./criteria.ts";
+import { GONE_AFTER_RUNS, isExcludedMake } from "./criteria.ts";
 import type { ListingRow } from "./types.ts";
 
 // Uses the service_role key, which bypasses row-level security. It comes from the environment
@@ -14,7 +14,7 @@ export async function upload(
   const db = createClient(url, key, { auth: { persistSession: false } });
   const today = opts.today ?? new Date().toISOString().slice(0, 10);
 
-  const { data, error } = await db.from("listings").select("id,status,missing_runs").range(0, 4999);
+  const { data, error } = await db.from("listings").select("id,make,status,missing_runs").range(0, 4999);
   if (error) throw new Error(`reading listings failed: ${error.message}`);
   const existing = new Map((data ?? []).map((r) => [r.id as string, r]));
 
@@ -36,7 +36,15 @@ export async function upload(
   const seen = new Set(rows.map((r) => r.id));
   let gone = 0;
   for (const [id, old] of existing) {
-    if (seen.has(id) || old.status === "gone") continue;
+    if (old.status === "gone") continue;
+    // A brand that is excluded now disappears at once, instead of after a few missed scans.
+    if (isExcludedMake(old.make as string | null)) {
+      const res = await db.from("listings").update({ status: "gone" }).eq("id", id);
+      if (res.error) throw new Error(`update ${id} failed: ${res.error.message}`);
+      gone += 1;
+      continue;
+    }
+    if (seen.has(id)) continue;
     if (opts.skipMissingForPrefixes.some((p) => id.startsWith(`${p}-`))) continue;
     const misses = ((old.missing_runs as number | null) ?? 0) + 1;
     const isGone = misses >= GONE_AFTER_RUNS;
