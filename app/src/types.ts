@@ -36,3 +36,10 @@ export interface AllowedEmail {
   role: Role;
   added_at: string;
 }
+
+/** Someone who signed in with Google but is not on the allowlist (from the database function access_requests). */
+export interface AccessRequest {
+  email: string;
+  requested_at: string;
+  last_sign_in_at: string | null;
+}

@@ -88,3 +88,6 @@ a.open, .btn { background: var(--accent); color: var(--on-accent); text-decorati
 form.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
 form.row label { font-size: 0.85rem; color: var(--muted); }
 form.row input { min-width: 0; flex: 1 1 220px; }
+
+section { display: flex; flex-direction: column; gap: 10px; }
+h2 { font-size: 1.1rem; margin: 0; }

@@ -10,7 +10,8 @@
     "scan:dry": "node src/run.ts --dry-run",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "sync-admins": "node src/sync-admins.ts"
+    "sync-admins": "node src/sync-admins.ts",
+    "sync-settings": "node src/sync-settings.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0"
