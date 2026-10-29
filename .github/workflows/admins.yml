@@ -1,0 +1,36 @@
+name: Sync admins
+
+# Makes the people in the secret ADMIN_EMAILS admins in the database. Run it once to get the first admin,
+# after that people are added in the app (Toegang tab). The addresses stay in a secret, so they never
+# appear in this public repo or in the logs.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admins
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: scanner
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: scanner/package-lock.json
+      - run: npm ci
+      - name: Add the admins
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+        run: npm run sync-admins
