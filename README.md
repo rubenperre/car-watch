@@ -36,7 +36,7 @@ plain SQL in `supabase/`.
    It needs, once: a Supabase *access token* (supabase.com/dashboard/account/tokens) as secret
    `SUPABASE_ACCESS_TOKEN`, the *database password* of the project (Project Settings, Database; reset it if you
    do not have it) as secret `SUPABASE_DB_PASSWORD`, and the project ref (the part of the project URL before
-   `.supabase.co`) as variable `SUPABASE_PROJECT_REF`. Without them the workflow only prints a warning.
+   `.supabase.co`) as variable `SUPABASE_PROJECT_REF`. If one is missing or empty the workflow fails and names which one (it never prints the value).
    Pasting a migration into the SQL editor still works as a fallback.
 3. **Turn off other sign-in methods.** *Authentication, Providers*: disable Email. Only Google stays on.
 4. **Google sign-in.**
@@ -132,7 +132,7 @@ run, as `jobs` made of `steps`. Each job gets a fresh virtual machine.
   every migration the database has not seen yet and remembers which ones it did. That is the same idea as Laravel's
   `php artisan migrate`.
 - Migrations are written to be safe to run twice, so the first run over the files that were pasted by hand earlier is harmless.
-- *Missing secrets:* a step checks them and prints a warning instead of failing, because secrets cannot be used in an `if:`.
+- *Missing secrets:* a step checks them and fails with the name of the missing value (secrets cannot be used in an `if:`, so they are mapped to env first). A green run therefore always means the migrations were applied.
 
 **`admins.yml`: a manual, one-off job.** `workflow_dispatch` only. It reads the secret `ADMIN_EMAILS` and makes
 those people admins with the service key. It exists because of a chicken-and-egg problem: the admin tab needs an
