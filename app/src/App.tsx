@@ -6,7 +6,11 @@ import { Message } from "./components/Message";
 import { configured, supabase } from "./supabase";
 import type { Role } from "./types";
 
-type AccessState = { state: "loading" } | { state: "denied" } | { state: "ok"; role: Role };
+type AccessState =
+  | { state: "loading" }
+  | { state: "denied" }
+  | { state: "error"; message: string }
+  | { state: "ok"; role: Role };
 type Tab = "cars" | "access";
 
 export default function App() {
@@ -27,7 +31,9 @@ export default function App() {
     if (!supabase || !session) return;
     setAccess({ state: "loading" });
     supabase.rpc("my_role").then(({ data, error }) => {
-      if (error || (data !== "admin" && data !== "viewer")) setAccess({ state: "denied" });
+      // An error is not the same as "not on the list": show it, so a broken setup is not mistaken for no access.
+      if (error) setAccess({ state: "error", message: error.message });
+      else if (data !== "admin" && data !== "viewer") setAccess({ state: "denied" });
       else setAccess({ state: "ok", role: data });
     });
   }, [session]);
@@ -69,6 +75,22 @@ export default function App() {
   const signOut = () => supabase?.auth.signOut();
 
   if (access.state === "loading") return <Message title="Laden..." />;
+
+  if (access.state === "error") {
+    return (
+      <Message title="Er ging iets mis">
+        <p>
+          De toegangscontrole is mislukt voor <b>{email}</b>. Dit is een fout in de instelling, geen weigering.
+        </p>
+        <p>
+          <code>{access.message}</code>
+        </p>
+        <button className="btn secondary" type="button" onClick={signOut}>
+          Uitloggen
+        </button>
+      </Message>
+    );
+  }
 
   if (access.state === "denied") {
     return (
